@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "clientcarts",
+  "version": "${version}",
+  "name": "ClientCarts",
+  "description": "Carts spawn on the client",
+  "authors": [],
+  "contact": {},
+  "license": "BSD-3-Clause",
+  "icon": "assets/clientcarts/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "lgbt.milk.clientcarts.client.ClientcartsClient"
+    ],
+    "main": [
+      "lgbt.milk.clientcarts.Clientcarts"
+    ],
+    "modmenu": [
+      "lgbt.milk.clientcarts.client.ClientCartsModMenu"
+    ]
+  },
+  "mixins": [
+    "clientcarts.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}",
+    "yet_another_config_lib_v3": ">=3.8.1"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}
