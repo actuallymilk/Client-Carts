@@ -31,7 +31,7 @@ public final class ClientCartsConfigScreen {
                         .option(Option.<Color>createBuilder()
                                 .name(Component.literal("Overlay Color"))
                                 .binding(Color.WHITE, () -> new Color(config.overlayColor),
-                                        value -> config.overlayColor = value.getRGB() & 0xFF0000)
+                                        value -> config.overlayColor = value.getRGB() & 0xFFFFFF)
                                 .controller(option -> ColorControllerBuilder.create(option).allowAlpha(false))
                                 .build())
                         .option(Option.<Integer>createBuilder()

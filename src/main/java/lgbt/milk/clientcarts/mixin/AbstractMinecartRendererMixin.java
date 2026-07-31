@@ -10,6 +10,11 @@ import net.minecraft.client.renderer.entity.state.MinecartRenderState;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer.CrumblingOverlay;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
+/*? if >=26.1 {*/
+/*import net.minecraft.client.renderer.state.level.CameraRenderState;*/
+/*?} else {*/
+import net.minecraft.client.renderer.state.CameraRenderState;
+/*?}*/
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
 import net.minecraft.world.entity.vehicle.minecart.MinecartTNT;
@@ -31,18 +36,42 @@ public abstract class AbstractMinecartRendererMixin {
         GhostMinecartManager.markRenderState(state, entity instanceof MinecartTNT tnt && GhostMinecartManager.isGhost(tnt));
     }
 
+    /*? if >=26.1 {*/
+    /*@Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/MinecartRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V", at = @At("HEAD"))*/
+    /*?} else {*/
     @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/MinecartRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V", at = @At("HEAD"))
+    /*?}*/
     private void clientcarts$beginGhostRender(MinecartRenderState state, PoseStack matrices, SubmitNodeCollector queue,
-                                              net.minecraft.client.renderer.state.CameraRenderState camera, CallbackInfo ci) {
+                                              CameraRenderState camera, CallbackInfo ci) {
         clientcarts$ghost = GhostMinecartManager.isGhost(state);
     }
 
+    /*? if >=26.1 {*/
+    /*@Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/MinecartRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V", at = @At("RETURN"))*/
+    /*?} else {*/
     @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/MinecartRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V", at = @At("RETURN"))
+    /*?}*/
     private void clientcarts$endGhostRender(MinecartRenderState state, PoseStack matrices, SubmitNodeCollector queue,
-                                            net.minecraft.client.renderer.state.CameraRenderState camera, CallbackInfo ci) {
+                                            CameraRenderState camera, CallbackInfo ci) {
         clientcarts$ghost = false;
     }
 
+    /*? if >=26.1 {*/
+    /*@Redirect(
+            method = "submit(Lnet/minecraft/client/renderer/entity/state/MinecartRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SubmitNodeCollector;submitModel(Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/resources/Identifier;IIILnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;)V")
+    )
+    private <S> void clientcarts$renderCart(SubmitNodeCollector queue, Model<? super S> model, S state,
+                                            PoseStack matrices, Identifier texture, int light, int overlay,
+                                            int outline, CrumblingOverlay crumbling) {
+        if (clientcarts$ghost) {
+            queue.submitModel(model, state, matrices, clientcarts$translucent(texture), light, overlay,
+                    ClientCartsConfig.renderColor(), null, outline, crumbling);
+        } else {
+            queue.submitModel(model, state, matrices, texture, light, overlay, outline, crumbling);
+        }
+    }*/
+    /*?} else {*/
     @Redirect(
             method = "submit(Lnet/minecraft/client/renderer/entity/state/MinecartRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SubmitNodeCollector;submitModel(Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/rendertype/RenderType;IIILnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;)V")
@@ -50,8 +79,20 @@ public abstract class AbstractMinecartRendererMixin {
     private <S> void clientcarts$renderCart(SubmitNodeCollector queue, Model<? super S> model, S state,
                                             PoseStack matrices, RenderType renderType, int light, int overlay,
                                             int outline, CrumblingOverlay crumbling) {
-        queue.submitModel(model, state, matrices,
-                clientcarts$ghost ? RenderTypes.entityTranslucent(CLIENTCARTS_MINECART) : renderType,
+        queue.submitModel(model, state, matrices, clientcarts$ghost ? clientcarts$translucent() : renderType,
                 light, overlay, clientcarts$ghost ? ClientCartsConfig.renderColor() : -1, null, outline, crumbling);
     }
+    /*?}*/
+
+    /*? if >=26.1 {*/
+    /*@Unique
+    private static RenderType clientcarts$translucent(Identifier texture) {
+        return RenderTypes.entityTranslucent(texture);
+    }*/
+    /*?} else {*/
+    @Unique
+    private static RenderType clientcarts$translucent() {
+        return RenderTypes.entityTranslucent(CLIENTCARTS_MINECART);
+    }
+    /*?}*/
 }

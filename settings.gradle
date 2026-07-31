@@ -1,9 +1,30 @@
 pluginManagement {
     repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        maven {
+            name = 'KikuGie Releases'
+            url = 'https://maven.kikugie.dev/releases'
+        }
         maven {
             name = 'Fabric'
             url = 'https://maven.fabricmc.net/'
         }
-        gradlePluginPortal()
     }
 }
+
+plugins {
+    id 'dev.kikugie.stonecutter' version '0.9.4'
+}
+
+stonecutter {
+    kotlinController = false
+    centralScript = 'build.gradle'
+
+    create(rootProject) {
+        versions '1.21.11', '26.1', '26.1.1', '26.1.2', '26.2'
+        vcsVersion = '1.21.11'
+    }
+}
+
+rootProject.name = 'ClientCarts'

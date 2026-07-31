@@ -1,107 +1,110 @@
 plugins {
-    id 'fabric-loom' version '1.14.10'
+    id 'net.fabricmc.fabric-loom-remap' version '1.17-SNAPSHOT' apply false
+    id 'net.fabricmc.fabric-loom' version '1.17-SNAPSHOT' apply false
     id 'maven-publish'
 }
 
-version = project.mod_version
+def minecraftVersion = stonecutter.current.version
+def unobfuscatedMinecraft = minecraftVersion.startsWith('26.')
+if (unobfuscatedMinecraft) {
+    apply plugin: 'net.fabricmc.fabric-loom'
+} else {
+    apply plugin: 'net.fabricmc.fabric-loom-remap'
+}
+
+version = "${project.mod_version}+${minecraftVersion}"
 group = project.maven_group
 
-
-loom {
-    mixin {
-        defaultRefmapName = "clientcarts-refmap.json"
-        useLegacyMixinAp = true
-    }
-}
 base {
     archivesName = project.archives_base_name
 }
 
+if (!unobfuscatedMinecraft) loom {
+    mixin {
+        defaultRefmapName = 'clientcarts-refmap.json'
+        useLegacyMixinAp = true
+    }
+}
 
 repositories {
     maven {
-        name 'Xander Maven'
-        url 'https://maven.isxander.dev/releases'
+        name = 'Xander Maven'
+        url = 'https://maven.isxander.dev/releases'
     }
     maven {
-        name 'TerraformersMC'
-        url 'https://maven.terraformersmc.com/releases/'
+        name = 'TerraformersMC'
+        url = 'https://maven.terraformersmc.com/releases/'
     }
-
-    // Add repositories to retrieve artifacts from in here.
-    // You should only use this when depending on other mods because
-    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-    // for more information about repositories.
 }
 
 dependencies {
-    // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
-    modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+    if (unobfuscatedMinecraft) {
+        implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+        implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+        implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+        compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+    } else {
+        mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+        modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+        modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+    }
 }
 
 processResources {
-    inputs.property "version", project.version
-    inputs.property "minecraft_version", project.minecraft_version
-    inputs.property "loader_version", project.loader_version
-    filteringCharset "UTF-8"
+    inputs.property 'version', project.version
+    inputs.property 'minecraft_version', project.minecraft_version
+    inputs.property 'loader_version', project.loader_version
+    inputs.property 'java_version', project.java_version
+    filteringCharset 'UTF-8'
 
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version,
-                "minecraft_version": project.minecraft_version,
-                "loader_version": project.loader_version
+    filesMatching('fabric.mod.json') {
+        expand version: project.version,
+                minecraft_version: project.minecraft_version,
+                loader_version: project.loader_version,
+                java_version: project.java_version
+    }
+
+    if (unobfuscatedMinecraft) doLast {
+        def mixinFile = destinationDir.toPath().resolve('clientcarts.mixins.json').toFile()
+        def mixinConfig = new groovy.json.JsonSlurper().parse(mixinFile)
+        mixinConfig.remove('refmap')
+        mixinConfig.compatibilityLevel = 'JAVA_25'
+        mixinFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(mixinConfig)) + '\n'
     }
 }
 
-def targetJavaVersion = 21
 tasks.withType(JavaCompile).configureEach {
-    // ensure that the encoding is set to UTF-8, no matter what the system default is
-    // this fixes some edge cases with special characters not displaying correctly
-    // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-    // If Javadoc is generated, this must be specified in that task too.
-    it.options.encoding = "UTF-8"
-    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-        it.options.release.set(targetJavaVersion)
-    }
+    options.encoding = 'UTF-8'
+    options.release.set(project.java_version as int)
 }
 
 java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    }
-    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-    // if it is present.
-    // If you remove this line, sources will not be generated.
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
     withSourcesJar()
 }
 
 jar {
-    from("LICENSE") {
-        rename { "${it}_${project.archives_base_name}" }
+    from(rootProject.file('LICENSE.txt')) {
+        rename { "LICENSE_${project.archives_base_name}" }
     }
 }
 
-// configure the maven publication
+def distributableJar = tasks.named(unobfuscatedMinecraft ? 'jar' : 'remapJar')
+tasks.register('buildAndCollect', Copy) {
+    group = 'build'
+    dependsOn distributableJar
+    from distributableJar.flatMap { it.archiveFile }
+    into rootProject.layout.buildDirectory.dir('libs')
+}
+
 publishing {
     publications {
-        create("mavenJava", MavenPublication) {
+        create('mavenJava', MavenPublication) {
             artifactId = project.archives_base_name
             from components.java
         }
-    }
-
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
     }
 }

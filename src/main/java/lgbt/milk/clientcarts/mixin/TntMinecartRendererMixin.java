@@ -7,10 +7,15 @@ import lgbt.milk.clientcarts.client.GhostMinecartManager;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.TntMinecartRenderer;
 import net.minecraft.client.renderer.entity.state.MinecartTntRenderState;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.Identifier;
+/*? if >=26.1 {*/
+/*import net.minecraft.client.renderer.block.BlockModelRenderState;*/
+/*?} else {*/
 import net.minecraft.world.level.block.state.BlockState;
+/*?}*/
+import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,6 +33,38 @@ public abstract class TntMinecartRendererMixin {
             Identifier.withDefaultNamespace("textures/block/tnt_bottom.png");
     @Unique private boolean clientcarts$ghost;
 
+    /*? if >=26.1 {*/
+    /*@Inject(method = "submitMinecartContents(Lnet/minecraft/client/renderer/entity/state/MinecartTntRenderState;Lnet/minecraft/client/renderer/block/BlockModelRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V", at = @At("HEAD"))
+    private void clientcarts$beginTntRender(MinecartTntRenderState state, BlockModelRenderState block, PoseStack matrices,
+                                            SubmitNodeCollector queue, int light, CallbackInfo ci) {
+        clientcarts$ghost = GhostMinecartManager.isGhost(state);
+    }
+
+    @Inject(method = "submitMinecartContents(Lnet/minecraft/client/renderer/entity/state/MinecartTntRenderState;Lnet/minecraft/client/renderer/block/BlockModelRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V", at = @At("RETURN"))
+    private void clientcarts$endTntRender(MinecartTntRenderState state, BlockModelRenderState block, PoseStack matrices,
+                                          SubmitNodeCollector queue, int light, CallbackInfo ci) {
+        clientcarts$ghost = false;
+    }
+
+    @Redirect(
+            method = "submitMinecartContents(Lnet/minecraft/client/renderer/entity/state/MinecartTntRenderState;Lnet/minecraft/client/renderer/block/BlockModelRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/TntMinecartRenderer;submitWhiteSolidBlock(Lnet/minecraft/client/renderer/block/BlockModelRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;IZI)V")
+    )
+    private void clientcarts$renderTnt(BlockModelRenderState state, PoseStack matrices, SubmitNodeCollector queue,
+                                       int light, boolean white, int outline) {
+        if (!clientcarts$ghost) {
+            TntMinecartRenderer.submitWhiteSolidBlock(state, matrices, queue, light, white, outline);
+            return;
+        }
+
+        queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_SIDE),
+                (pose, vertices) -> clientcarts$sides(pose, vertices, light));
+        queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_TOP),
+                (pose, vertices) -> clientcarts$top(pose, vertices, light));
+        queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_BOTTOM),
+                (pose, vertices) -> clientcarts$bottom(pose, vertices, light));
+    }*/
+    /*?} else {*/
     @Inject(method = "submitMinecartContents(Lnet/minecraft/client/renderer/entity/state/MinecartTntRenderState;Lnet/minecraft/world/level/block/state/BlockState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V", at = @At("HEAD"))
     private void clientcarts$beginTntRender(MinecartTntRenderState state, BlockState block, PoseStack matrices,
                                             SubmitNodeCollector queue, int light, CallbackInfo ci) {
@@ -51,12 +88,22 @@ public abstract class TntMinecartRendererMixin {
             return;
         }
 
-        queue.submitCustomGeometry(matrices, RenderTypes.itemEntityTranslucentCull(CLIENTCARTS_TNT_SIDE),
+        queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_SIDE),
                 (pose, vertices) -> clientcarts$sides(pose, vertices, light));
-        queue.submitCustomGeometry(matrices, RenderTypes.itemEntityTranslucentCull(CLIENTCARTS_TNT_TOP),
+        queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_TOP),
                 (pose, vertices) -> clientcarts$top(pose, vertices, light));
-        queue.submitCustomGeometry(matrices, RenderTypes.itemEntityTranslucentCull(CLIENTCARTS_TNT_BOTTOM),
+        queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_BOTTOM),
                 (pose, vertices) -> clientcarts$bottom(pose, vertices, light));
+    }
+    /*?}*/
+
+    @Unique
+    private static RenderType clientcarts$translucent(Identifier texture) {
+        /*? if >=26.1 {*/
+        /*return RenderTypes.itemTranslucent(texture);*/
+        /*?} else {*/
+        return RenderTypes.itemEntityTranslucentCull(texture);
+        /*?}*/
     }
 
     @Unique

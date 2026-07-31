@@ -1,0 +1,11 @@
+plugins {
+    id 'dev.kikugie.stonecutter'
+}
+
+stonecutter.active '1.21.11' /* [SC] DO NOT EDIT */
+
+tasks.register('buildAll') {
+    group = 'build'
+    description = 'Builds and collects every supported Minecraft version.'
+    dependsOn subprojects.collect { "${it.path}:buildAndCollect" }
+}

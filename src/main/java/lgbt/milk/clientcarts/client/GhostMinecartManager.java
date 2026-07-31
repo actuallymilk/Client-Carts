@@ -5,7 +5,11 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.entity.state.MinecartRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
+/*? if >=26.2 {*/
+/*import net.minecraft.world.entity.EntityTypes;*/
+/*?} else {*/
 import net.minecraft.world.entity.EntityType;
+/*?}*/
 import net.minecraft.world.entity.vehicle.minecart.MinecartTNT;
 import net.minecraft.world.level.block.BaseRailBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -48,7 +52,11 @@ public final class GhostMinecartManager {
                 pos.getY() + 0.0625 + (shape.isSlope() ? 0.5 : 0.0),
                 pos.getZ() + 0.5
         );
+        /*? if >=26.2 {*/
+        /*MinecartTNT ghost = new MinecartTNT(EntityTypes.TNT_MINECART, world);*/
+        /*?} else {*/
         MinecartTNT ghost = new MinecartTNT(EntityType.TNT_MINECART, world);
+        /*?}*/
         ghost.setUUID(java.util.UUID.randomUUID());
         ghost.setPos(placement);
         ghost.noPhysics = true;
