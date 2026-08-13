@@ -60,6 +60,7 @@ public final class GhostMinecartManager {
         ghost.setUUID(java.util.UUID.randomUUID());
         ghost.setPos(placement);
         ghost.noPhysics = true;
+        ghost.blocksBuilding = false;
 
         GHOST_ENTITIES.add(ghost);
         GHOSTS.add(new Ghost(ghost, placement, TIMEOUT_TICKS));

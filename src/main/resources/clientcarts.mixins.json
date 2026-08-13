@@ -8,7 +8,7 @@
   ],
   "client": [
     "AbstractMinecartRendererMixin",
-    "EntityMixin",
+    "AbstractMinecartMixin",
     "TntMinecartRendererMixin"
   ],
   "injectors": {
