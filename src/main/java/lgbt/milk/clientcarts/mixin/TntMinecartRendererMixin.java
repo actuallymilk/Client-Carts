@@ -32,18 +32,21 @@ public abstract class TntMinecartRendererMixin {
     @Unique private static final Identifier CLIENTCARTS_TNT_BOTTOM =
             Identifier.withDefaultNamespace("textures/block/tnt_bottom.png");
     @Unique private boolean clientcarts$ghost;
+    @Unique private boolean clientcarts$overloaded;
 
     /*? if >=26.1 {*/
     /*@Inject(method = "submitMinecartContents(Lnet/minecraft/client/renderer/entity/state/MinecartTntRenderState;Lnet/minecraft/client/renderer/block/BlockModelRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V", at = @At("HEAD"))
     private void clientcarts$beginTntRender(MinecartTntRenderState state, BlockModelRenderState block, PoseStack matrices,
                                             SubmitNodeCollector queue, int light, CallbackInfo ci) {
         clientcarts$ghost = GhostMinecartManager.isGhost(state);
+        clientcarts$overloaded = GhostMinecartManager.isOverloaded(state);
     }
 
     @Inject(method = "submitMinecartContents(Lnet/minecraft/client/renderer/entity/state/MinecartTntRenderState;Lnet/minecraft/client/renderer/block/BlockModelRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V", at = @At("RETURN"))
     private void clientcarts$endTntRender(MinecartTntRenderState state, BlockModelRenderState block, PoseStack matrices,
                                           SubmitNodeCollector queue, int light, CallbackInfo ci) {
         clientcarts$ghost = false;
+        clientcarts$overloaded = false;
     }
 
     @Redirect(
@@ -52,29 +55,32 @@ public abstract class TntMinecartRendererMixin {
     )
     private void clientcarts$renderTnt(BlockModelRenderState state, PoseStack matrices, SubmitNodeCollector queue,
                                        int light, boolean white, int outline) {
-        if (!clientcarts$ghost) {
+        if (!clientcarts$ghost && !clientcarts$overloaded) {
             TntMinecartRenderer.submitWhiteSolidBlock(state, matrices, queue, light, white, outline);
             return;
         }
 
+        int color = clientcarts$ghost ? ClientCartsConfig.renderColor() : ClientCartsConfig.overloadColor();
         queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_SIDE),
-                (pose, vertices) -> clientcarts$sides(pose, vertices, light));
+                (pose, vertices) -> clientcarts$sides(pose, vertices, light, color));
         queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_TOP),
-                (pose, vertices) -> clientcarts$top(pose, vertices, light));
+                (pose, vertices) -> clientcarts$top(pose, vertices, light, color));
         queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_BOTTOM),
-                (pose, vertices) -> clientcarts$bottom(pose, vertices, light));
+                (pose, vertices) -> clientcarts$bottom(pose, vertices, light, color));
     }*/
     /*?} else {*/
     @Inject(method = "submitMinecartContents(Lnet/minecraft/client/renderer/entity/state/MinecartTntRenderState;Lnet/minecraft/world/level/block/state/BlockState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V", at = @At("HEAD"))
     private void clientcarts$beginTntRender(MinecartTntRenderState state, BlockState block, PoseStack matrices,
                                             SubmitNodeCollector queue, int light, CallbackInfo ci) {
         clientcarts$ghost = GhostMinecartManager.isGhost(state);
+        clientcarts$overloaded = GhostMinecartManager.isOverloaded(state);
     }
 
     @Inject(method = "submitMinecartContents(Lnet/minecraft/client/renderer/entity/state/MinecartTntRenderState;Lnet/minecraft/world/level/block/state/BlockState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V", at = @At("RETURN"))
     private void clientcarts$endTntRender(MinecartTntRenderState state, BlockState block, PoseStack matrices,
                                           SubmitNodeCollector queue, int light, CallbackInfo ci) {
         clientcarts$ghost = false;
+        clientcarts$overloaded = false;
     }
 
     @Redirect(
@@ -83,17 +89,18 @@ public abstract class TntMinecartRendererMixin {
     )
     private void clientcarts$renderTnt(BlockState state, PoseStack matrices, SubmitNodeCollector queue,
                                        int light, boolean white, int outline) {
-        if (!clientcarts$ghost) {
+        if (!clientcarts$ghost && !clientcarts$overloaded) {
             TntMinecartRenderer.submitWhiteSolidBlock(state, matrices, queue, light, white, outline);
             return;
         }
 
+        int color = clientcarts$ghost ? ClientCartsConfig.renderColor() : ClientCartsConfig.overloadColor();
         queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_SIDE),
-                (pose, vertices) -> clientcarts$sides(pose, vertices, light));
+                (pose, vertices) -> clientcarts$sides(pose, vertices, light, color));
         queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_TOP),
-                (pose, vertices) -> clientcarts$top(pose, vertices, light));
+                (pose, vertices) -> clientcarts$top(pose, vertices, light, color));
         queue.submitCustomGeometry(matrices, clientcarts$translucent(CLIENTCARTS_TNT_BOTTOM),
-                (pose, vertices) -> clientcarts$bottom(pose, vertices, light));
+                (pose, vertices) -> clientcarts$bottom(pose, vertices, light, color));
     }
     /*?}*/
 
@@ -107,39 +114,40 @@ public abstract class TntMinecartRendererMixin {
     }
 
     @Unique
-    private static void clientcarts$sides(PoseStack.Pose pose, VertexConsumer vertices, int light) {
-        clientcarts$quad(pose, vertices, light, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, -1);
-        clientcarts$quad(pose, vertices, light, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1);
-        clientcarts$quad(pose, vertices, light, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, -1, 0, 0);
-        clientcarts$quad(pose, vertices, light, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0);
+    private static void clientcarts$sides(PoseStack.Pose pose, VertexConsumer vertices, int light, int color) {
+        clientcarts$quad(pose, vertices, light, color, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, -1);
+        clientcarts$quad(pose, vertices, light, color, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1);
+        clientcarts$quad(pose, vertices, light, color, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, -1, 0, 0);
+        clientcarts$quad(pose, vertices, light, color, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0);
     }
 
     @Unique
-    private static void clientcarts$top(PoseStack.Pose pose, VertexConsumer vertices, int light) {
-        clientcarts$quad(pose, vertices, light, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0);
+    private static void clientcarts$top(PoseStack.Pose pose, VertexConsumer vertices, int light, int color) {
+        clientcarts$quad(pose, vertices, light, color, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0);
     }
 
     @Unique
-    private static void clientcarts$bottom(PoseStack.Pose pose, VertexConsumer vertices, int light) {
-        clientcarts$quad(pose, vertices, light, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, -1, 0);
+    private static void clientcarts$bottom(PoseStack.Pose pose, VertexConsumer vertices, int light, int color) {
+        clientcarts$quad(pose, vertices, light, color, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, -1, 0);
     }
 
     @Unique
     private static void clientcarts$quad(PoseStack.Pose pose, VertexConsumer vertices, int light,
+                                         int color,
                                          float x1, float y1, float z1, float x2, float y2, float z2,
                                          float x3, float y3, float z3, float x4, float y4, float z4,
                                          float nx, float ny, float nz) {
-        clientcarts$vertex(pose, vertices, light, x1, y1, z1, 0, 1, nx, ny, nz);
-        clientcarts$vertex(pose, vertices, light, x2, y2, z2, 0, 0, nx, ny, nz);
-        clientcarts$vertex(pose, vertices, light, x3, y3, z3, 1, 0, nx, ny, nz);
-        clientcarts$vertex(pose, vertices, light, x4, y4, z4, 1, 1, nx, ny, nz);
+        clientcarts$vertex(pose, vertices, light, color, x1, y1, z1, 0, 1, nx, ny, nz);
+        clientcarts$vertex(pose, vertices, light, color, x2, y2, z2, 0, 0, nx, ny, nz);
+        clientcarts$vertex(pose, vertices, light, color, x3, y3, z3, 1, 0, nx, ny, nz);
+        clientcarts$vertex(pose, vertices, light, color, x4, y4, z4, 1, 1, nx, ny, nz);
     }
 
     @Unique
     private static void clientcarts$vertex(PoseStack.Pose pose, VertexConsumer vertices, int light,
+                                           int color,
                                            float x, float y, float z, float u, float v,
                                            float nx, float ny, float nz) {
-        int color = ClientCartsConfig.renderColor();
         vertices.addVertex(pose, x, y, z)
                 .setColor((color >> 16) & 255, (color >> 8) & 255, color & 255, color >>> 24)
                 .setUv(u, v)

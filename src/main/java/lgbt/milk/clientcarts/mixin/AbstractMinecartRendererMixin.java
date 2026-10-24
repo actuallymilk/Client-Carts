@@ -30,10 +30,13 @@ public abstract class AbstractMinecartRendererMixin {
     @Unique private static final Identifier CLIENTCARTS_MINECART =
             Identifier.withDefaultNamespace("textures/entity/minecart.png");
     @Unique private boolean clientcarts$ghost;
+    @Unique private boolean clientcarts$overloaded;
 
     @Inject(method = "extractRenderState(Lnet/minecraft/world/entity/vehicle/minecart/AbstractMinecart;Lnet/minecraft/client/renderer/entity/state/MinecartRenderState;F)V", at = @At("TAIL"))
     private void clientcarts$markState(AbstractMinecart entity, MinecartRenderState state, float tickDelta, CallbackInfo ci) {
-        GhostMinecartManager.markRenderState(state, entity instanceof MinecartTNT tnt && GhostMinecartManager.isGhost(tnt));
+        boolean tnt = entity instanceof MinecartTNT;
+        GhostMinecartManager.markRenderState(state, tnt && GhostMinecartManager.isGhost((MinecartTNT) entity));
+        GhostMinecartManager.markOverloaded(state, tnt && GhostMinecartManager.isOverloaded((MinecartTNT) entity));
     }
 
     /*? if >=26.1 {*/
@@ -44,6 +47,7 @@ public abstract class AbstractMinecartRendererMixin {
     private void clientcarts$beginGhostRender(MinecartRenderState state, PoseStack matrices, SubmitNodeCollector queue,
                                               CameraRenderState camera, CallbackInfo ci) {
         clientcarts$ghost = GhostMinecartManager.isGhost(state);
+        clientcarts$overloaded = GhostMinecartManager.isOverloaded(state);
     }
 
     /*? if >=26.1 {*/
@@ -54,6 +58,7 @@ public abstract class AbstractMinecartRendererMixin {
     private void clientcarts$endGhostRender(MinecartRenderState state, PoseStack matrices, SubmitNodeCollector queue,
                                             CameraRenderState camera, CallbackInfo ci) {
         clientcarts$ghost = false;
+        clientcarts$overloaded = false;
     }
 
     /*? if >=26.1 {*/
@@ -64,9 +69,10 @@ public abstract class AbstractMinecartRendererMixin {
     private <S> void clientcarts$renderCart(SubmitNodeCollector queue, Model<? super S> model, S state,
                                             PoseStack matrices, Identifier texture, int light, int overlay,
                                             int outline, CrumblingOverlay crumbling) {
-        if (clientcarts$ghost) {
+        if (clientcarts$ghost || clientcarts$overloaded) {
             queue.submitModel(model, state, matrices, clientcarts$translucent(texture), light, overlay,
-                    ClientCartsConfig.renderColor(), null, outline, crumbling);
+                    clientcarts$ghost ? ClientCartsConfig.renderColor() : ClientCartsConfig.overloadColor(),
+                    null, outline, crumbling);
         } else {
             queue.submitModel(model, state, matrices, texture, light, overlay, outline, crumbling);
         }
@@ -79,8 +85,10 @@ public abstract class AbstractMinecartRendererMixin {
     private <S> void clientcarts$renderCart(SubmitNodeCollector queue, Model<? super S> model, S state,
                                             PoseStack matrices, RenderType renderType, int light, int overlay,
                                             int outline, CrumblingOverlay crumbling) {
+        boolean tinted = clientcarts$ghost || clientcarts$overloaded;
         queue.submitModel(model, state, matrices, clientcarts$ghost ? clientcarts$translucent() : renderType,
-                light, overlay, clientcarts$ghost ? ClientCartsConfig.renderColor() : -1, null, outline, crumbling);
+                light, overlay, tinted ? clientcarts$ghost ? ClientCartsConfig.renderColor()
+                        : ClientCartsConfig.overloadColor() : -1, null, outline, crumbling);
     }
     /*?}*/
 

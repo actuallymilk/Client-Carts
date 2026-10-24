@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.BaseRailBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.RailShape;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -30,6 +31,8 @@ public final class GhostMinecartManager {
     private static final Set<MinecartTNT> GHOST_ENTITIES =
             Collections.newSetFromMap(new IdentityHashMap<>());
     private static final Set<MinecartRenderState> GHOST_STATES =
+            Collections.newSetFromMap(new WeakHashMap<>());
+    private static final Set<MinecartRenderState> OVERLOADED_STATES =
             Collections.newSetFromMap(new WeakHashMap<>());
 
     public static void place(ClientLevel world, BlockHitResult hit) {
@@ -104,6 +107,22 @@ public final class GhostMinecartManager {
         return GHOST_ENTITIES.contains(minecart);
     }
 
+    public static boolean isOverloaded(MinecartTNT minecart) {
+        if (!ClientCartsConfig.get().modEnabled || !ClientCartsConfig.get().overloadIndicator || isGhost(minecart)) {
+            return false;
+        }
+        BlockPos railPos = BlockPos.containing(minecart.position());
+        if (!minecart.level().getBlockState(railPos).is(BlockTags.RAILS)) {
+            return false;
+        }
+        return minecart.level().getEntitiesOfClass(MinecartTNT.class, new AABB(railPos),
+                other -> !isGhost(other)
+                        && BlockPos.containing(other.position()).equals(railPos)
+                        && Math.round(other.getX() * 1000) == Math.round(minecart.getX() * 1000)
+                        && Math.round(other.getY() * 1000) == Math.round(minecart.getY() * 1000)
+                        && Math.round(other.getZ() * 1000) == Math.round(minecart.getZ() * 1000)).size() >= 2;
+    }
+
     public static void markRenderState(MinecartRenderState state, boolean ghost) {
         if (ghost) {
             GHOST_STATES.add(state);
@@ -114,6 +133,18 @@ public final class GhostMinecartManager {
 
     public static boolean isGhost(MinecartRenderState state) {
         return GHOST_STATES.contains(state);
+    }
+
+    public static void markOverloaded(MinecartRenderState state, boolean overloaded) {
+        if (overloaded) {
+            OVERLOADED_STATES.add(state);
+        } else {
+            OVERLOADED_STATES.remove(state);
+        }
+    }
+
+    public static boolean isOverloaded(MinecartRenderState state) {
+        return OVERLOADED_STATES.contains(state);
     }
 
     private static void remove(Ghost ghost) {

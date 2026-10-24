@@ -21,6 +21,8 @@ public final class ClientCartsConfig {
     public boolean colorEnabled = false;
     public int overlayColor = 0xFFFFFF;
     public int transparency = 50;
+    public boolean overloadIndicator = false;
+    public int overloadTint = 0xFF0000;
 
     public static ClientCartsConfig get() {
         return INSTANCE;
@@ -30,6 +32,10 @@ public final class ClientCartsConfig {
         int rgb = INSTANCE.colorEnabled ? INSTANCE.overlayColor : 0xFFFFFF;
         int alpha = (INSTANCE.transparency * 255 + 50) / 100;
         return alpha << 24 | rgb;
+    }
+
+    public static int overloadColor() {
+        return 0xFF000000 | INSTANCE.overloadTint;
     }
 
     public static void save() {
@@ -66,6 +72,7 @@ public final class ClientCartsConfig {
 
     private void sanitize() {
         overlayColor &= 0xFFFFFF;
+        overloadTint &= 0xFFFFFF;
         transparency = Math.clamp(transparency, 0, 100);
     }
 }
